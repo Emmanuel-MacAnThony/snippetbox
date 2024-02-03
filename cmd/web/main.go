@@ -7,12 +7,14 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/Emmanuel-MacAnThony/snippetbox/internal/models"
 	_ "github.com/go-sql-driver/mysql"
 )
 
 type application struct {
 	errorLog *log.Logger
 	infoLog  *log.Logger
+	snippets *models.SnippetModel
 }
 
 func openDB(dsn string) (*sql.DB, error) {
@@ -33,7 +35,7 @@ func openDB(dsn string) (*sql.DB, error) {
 func main() {
 
 	addr := flag.String("addr", ":4000", "http network address")
-	dsn := flag.String("sql", "root:feb0699@/snippetbox", "MySql data source name")
+	dsn := flag.String("sql", "root:feb0699@/snippetbox?parseTime=true", "MySql data source name")
 
 	flag.Parse()
 
@@ -55,6 +57,7 @@ func main() {
 	app := &application{
 		errorLog: errorLog,
 		infoLog:  infoLog,
+		snippets: &models.SnippetModel{DB: db},
 	}
 
 	srv := &http.Server{
