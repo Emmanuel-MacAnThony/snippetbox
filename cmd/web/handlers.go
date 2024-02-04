@@ -3,11 +3,11 @@ package main
 import (
 	"errors"
 	"fmt"
-	//"html/template"
 	"net/http"
 	"strconv"
 
 	"github.com/Emmanuel-MacAnThony/snippetbox/internal/models"
+	
 )
 
 // snippet view handler function
@@ -20,15 +20,21 @@ func (app *application) snippetView(response http.ResponseWriter, request *http.
 	}
 
 	snippet, err := app.snippets.Get(id)
-	if err != nil{
-		if errors.Is(err, models.ErrNoRecord){
+	if err != nil {
+		if errors.Is(err, models.ErrNoRecord) {
 			app.notFound(response)
-		}else {
+		} else {
 			app.serverError(response, err)
-			}
-			return
+		}
+		return
 	}
-	fmt.Fprintf(response, "%+v", snippet)
+
+	data := app.newTemplateData(*request)
+	data.Snippet = snippet
+
+	// Use the new render helper.
+	app.render(response, http.StatusOK, "view.tmpl.html", data)
+
 }
 
 // snippet create handler function
@@ -44,7 +50,7 @@ func (app *application) snippetCreate(response http.ResponseWriter, request *htt
 	expires := 7
 
 	id, err := app.snippets.Insert(title, content, expires)
-	if err != nil{
+	if err != nil {
 		app.serverError(response, err)
 	}
 
@@ -65,31 +71,12 @@ func (app *application) home(response http.ResponseWriter, request *http.Request
 		return
 	}
 
-	for _, snippet := range snippets{
-		fmt.Fprintf(response, "%+v\n", snippet)
-	}
-
-	// files := []string{
-	// 	"./ui/html/base.tmpl.html",
-	// 	"./ui/html/partials/nav.tmpl.html",
-	// 	"./ui/html/pages/home.tmpl.html",
-		
-	// }
-
-	// // parse template
-	// ts, err := template.ParseFiles(files...)
-	// if err != nil {
-	// 	app.errorLog.Println(err.Error())
-	// 	app.serverError(response, err)
-	// 	return
-	// }
-	// err = ts.ExecuteTemplate(response, "base", nil)
-
-	// if err != nil {
-	// 	app.errorLog.Println(err.Error())
-	// 	app.serverError(response, err)
-	// 	return
-	// }
+	data := app.newTemplateData(*request)
+	data.Snippets = snippets
 
 	
+	//Use the new render helper.
+	app.render(response, http.StatusOK, "home.tmpl.html", data)
+	
+
 }
