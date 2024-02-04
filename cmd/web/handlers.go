@@ -64,6 +64,8 @@ func (app *application) home(response http.ResponseWriter, request *http.Request
 		return
 	}
 
+	panic("oops something went wrong") // deliberate panic
+
 	snippets, err := app.snippets.Latest()
 
 	if err != nil {
