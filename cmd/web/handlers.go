@@ -7,13 +7,15 @@ import (
 	"strconv"
 
 	"github.com/Emmanuel-MacAnThony/snippetbox/internal/models"
-	
+	"github.com/julienschmidt/httprouter"
 )
 
 // snippet view handler function
 func (app *application) snippetView(response http.ResponseWriter, request *http.Request) {
 
-	id, err := strconv.Atoi(request.URL.Query().Get("id"))
+	params := httprouter.ParamsFromContext(request.Context())
+
+	id, err := strconv.Atoi(params.ByName("id"))
 	if err != nil || id < 1 {
 		app.notFound(response)
 		return
@@ -38,7 +40,7 @@ func (app *application) snippetView(response http.ResponseWriter, request *http.
 }
 
 // snippet create handler function
-func (app *application) snippetCreate(response http.ResponseWriter, request *http.Request) {
+func (app *application) snippetCreatePost(response http.ResponseWriter, request *http.Request) {
 	if request.Method != "POST" {
 		response.Header().Set("Allow", http.MethodPost)
 		app.clientError(response, http.StatusMethodNotAllowed)
@@ -57,15 +59,11 @@ func (app *application) snippetCreate(response http.ResponseWriter, request *htt
 	http.Redirect(response, request, fmt.Sprintf("/snippet/view?id=%d", id), http.StatusSeeOther)
 }
 
+func (app *application) snippetCreate(response http.ResponseWriter, request *http.Request) {
+	response.Write([]byte("Display the form for creating a new snippet..."))
+}
+
 func (app *application) home(response http.ResponseWriter, request *http.Request) {
-
-	if request.URL.Path != "/" {
-		http.NotFound(response, request)
-		return
-	}
-
-	panic("oops something went wrong") // deliberate panic
-
 	snippets, err := app.snippets.Latest()
 
 	if err != nil {
@@ -76,9 +74,6 @@ func (app *application) home(response http.ResponseWriter, request *http.Request
 	data := app.newTemplateData(*request)
 	data.Snippets = snippets
 
-	
 	//Use the new render helper.
 	app.render(response, http.StatusOK, "home.tmpl.html", data)
-	
-
 }
