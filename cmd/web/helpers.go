@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-func (app *application) newTemplateData(request http.Request) *templateData{
+func (app *application) newTemplateData(request *http.Request) *templateData{
 	return &templateData{
 		CurrentYear: time.Now().Year(),
 	}
