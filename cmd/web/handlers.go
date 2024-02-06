@@ -5,17 +5,17 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
-	
+
 	"github.com/Emmanuel-MacAnThony/snippetbox/internal/models"
 	"github.com/Emmanuel-MacAnThony/snippetbox/internal/validator"
 	"github.com/julienschmidt/httprouter"
 )
 
-type SnippetCreateForm struct {
-	Title       string
-	Content     string
-	Expires     int
-	validator.Validator
+type snippetCreateForm struct {
+	Title               string `form:"title"`
+	Content             string `form:"content"`
+	Expires             int    `form:"expires"`
+	validator.Validator `form:"-"`
 }
 
 // snippet view handler function
@@ -39,8 +39,11 @@ func (app *application) snippetView(response http.ResponseWriter, request *http.
 		return
 	}
 
+
+
 	data := app.newTemplateData(request)
 	data.Snippet = snippet
+	
 
 	// Use the new render helper.
 	app.render(response, http.StatusOK, "view.tmpl.html", data)
@@ -50,23 +53,13 @@ func (app *application) snippetView(response http.ResponseWriter, request *http.
 // snippet create handler function
 func (app *application) snippetCreatePost(response http.ResponseWriter, request *http.Request) {
 	// parse form to extract data in request body to postform map
-	err := request.ParseForm()
+	var form snippetCreateForm
+
+	err := app.decodePostForm(request, &form)
+
 	if err != nil {
 		app.clientError(response, http.StatusBadRequest)
 		return
-	}
-
-	expires, err := strconv.Atoi(request.PostForm.Get("expires"))
-	if err != nil {
-		app.clientError(response, http.StatusBadRequest)
-		return
-	}
-
-	form := SnippetCreateForm{
-		Title:       request.PostForm.Get("title"),
-		Content:     request.PostForm.Get("content"),
-		Expires:     expires,
-		
 	}
 
 	form.CheckField(validator.NotBlank(form.Title), "title", "This field cannot be blank")
@@ -74,7 +67,7 @@ func (app *application) snippetCreatePost(response http.ResponseWriter, request 
 	form.CheckField(validator.NotBlank(form.Content), "content", "This field cannot be blank")
 	form.CheckField(validator.PermittedInt(form.Expires, 1, 7, 365), "expires", "This field must equal 1, 7 or 365")
 
-	if !form.Valid(){
+	if !form.Valid() {
 		data := app.newTemplateData(request)
 		data.Form = form
 		app.render(response, http.StatusUnprocessableEntity, "create.tmpl.html", data)
@@ -87,12 +80,14 @@ func (app *application) snippetCreatePost(response http.ResponseWriter, request 
 		return
 	}
 
+	app.sessionManager.Put(request.Context(), "flash", "Snippet successfully created")
+
 	http.Redirect(response, request, fmt.Sprintf("/snippet/view/%d", id), http.StatusSeeOther)
 }
 
 func (app *application) snippetCreate(response http.ResponseWriter, request *http.Request) {
 	data := app.newTemplateData(request)
-	data.Form = SnippetCreateForm{
+	data.Form = snippetCreateForm{
 		Expires: 365,
 	}
 	app.render(response, http.StatusOK, "create.tmpl.html", data)

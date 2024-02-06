@@ -2,15 +2,20 @@ package main
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"net/http"
 	"runtime/debug"
 	"time"
+
+	"github.com/go-playground/form/v4"
 )
 
-func (app *application) newTemplateData(request *http.Request) *templateData{
+func (app *application) newTemplateData(request *http.Request) *templateData {
 	return &templateData{
 		CurrentYear: time.Now().Year(),
+		// Add the flash message to the template data, if one exists.
+		Flash: app.sessionManager.PopString(request.Context(), "flash"),
 	}
 }
 
@@ -50,4 +55,26 @@ func (app *application) clientError(response http.ResponseWriter, status int) {
 
 func (app *application) notFound(response http.ResponseWriter) {
 	app.clientError(response, http.StatusNotFound)
+}
+
+func (app *application) decodePostForm(request *http.Request, dst any) error {
+
+	err := request.ParseForm()
+	if err != nil {
+		return err
+	}
+
+	err = app.formDecoder.Decode(dst, request.PostForm)
+	if err != nil {
+
+		var invalidDecoderError *form.InvalidDecoderError
+
+		if errors.As(err, &invalidDecoderError) {
+			panic(err)
+		}
+
+		return err
+	}
+	return nil
+
 }
